@@ -1,0 +1,53 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python caches and environments
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# IDE and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Runtime output
+*.log
+logger/logs/*
+!logger/logs/.gitkeep
+training_artifacts/
+
+# Large third-party model artifacts
+/models/
+/rag_system_learning_version/models/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.h5
+*.msgpack
+
+# Local/private datasets and exports
+data/
+**/data_source/
+**/classify_data/
+*.csv
+*.pdf
+*.docx
+*.pptx
+*.zip
+*.rar
+
+# Internal delivery material
+简历交付包/
+*_简历交付包_*.zip
+
