@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from logger import get_logger
-from rag_system_learning_version.core.intent_classifier.bert_intent_model import (
+from rag_system.core.intent_classifier.bert_intent_model import (
     BertIntentModel,
 )
 
@@ -24,8 +24,11 @@ logger = get_logger(__name__)
 class QueryClassifier:
     """RAG业务使用的在线意图分类入口。"""
 
-    def __init__(self, model_path=None, intent_model=None):
-        self.intent_model = intent_model or BertIntentModel(model_path=model_path)
+    def __init__(self, model_path=None, intent_model=None, device=None):
+        self.intent_model = intent_model or BertIntentModel(
+            model_path=model_path,
+            device=device,
+        )
 
     def classify(self, query):
         """返回 ``(类别名称, 置信度)``。"""

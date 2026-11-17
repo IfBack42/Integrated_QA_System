@@ -16,7 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import numpy as np
 import torch
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import train_test_split
 from transformers import (
     BertForSequenceClassification,
@@ -26,7 +26,7 @@ from transformers import (
 )
 
 from logger import get_logger
-from rag_system_learning_version.core.intent_classifier.bert_intent_model import (
+from rag_system.core.intent_classifier.bert_intent_model import (
     DEFAULT_MODEL_PATH,
     ID_TO_LABEL,
     LABEL_TO_ID,
@@ -41,7 +41,7 @@ DEFAULT_TRAINING_LOG_DIR = RAG_SYSTEM_ROOT / "training_artifacts" / "bert_logs"
 
 
 class QueryDataset(torch.utils.data.Dataset):
-    """把Tokenizer批量编码结果包装成Trainer可逐条读取的数据集。"""
+    """Dataset对象。"""
 
     def __init__(self, encodings, labels):
         self.encodings = encodings
@@ -50,13 +50,6 @@ class QueryDataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         item = {name: values[index] for name, values in self.encodings.items()}
         item["labels"] = torch.tensor(self.labels[index], dtype=torch.long)
-        """
-        item =
-        {"input_ids": 第一条文本的编号数据,
-        "token_type_ids": 第一条文本的辅助数据,
-        "attention_mask": 第一条文本的有效位置数据,
-        "labels": 0,}
-        """
         return item
 
     def __len__(self):
@@ -125,14 +118,31 @@ class BertIntentTrainer:
             return_tensors="pt",
         )
         label_ids = [LABEL_TO_ID[label] for label in labels]
+        """
+        encodings = {
+            "input_ids": 二维张量,
+            # Token在BERT词表中的编号
+
+            "token_type_ids": 二维张量,
+            # 区分句子A和句子B；当前单句分类基本全是0
+
+            "attention_mask": 二维张量,
+            # 1表示真实Token，0表示Padding补齐位置
+        }
+        """
+
+
         return encodings, label_ids
 
     @staticmethod
     def _compute_metrics(eval_prediction):
-        """供Trainer回调，计算验证集准确率。"""
+        """供Trainer回调，计算验证集准确率和宏平均F1。"""
         logits, labels = eval_prediction
         predictions = np.argmax(logits, axis=-1)
-        return {"accuracy": float((predictions == labels).mean())}
+        return {
+            "accuracy": float((predictions == labels).mean()),
+            "f1_macro": float(f1_score(labels, predictions, average="macro")),
+        }
 
     def _save_model(self):
         """保存训练后的模型、标签映射和Tokenizer。"""
@@ -168,7 +178,13 @@ class BertIntentTrainer:
         # labels = ["通用知识","专业咨询","通用知识",]
 
         train_texts, validation_texts, train_labels, validation_labels = (
-            train_test_split(texts, labels, test_size=0.2, random_state=42)
+            train_test_split(
+                texts,
+                labels,
+                test_size=0.2,
+                random_state=42,
+                stratify=labels,
+            )
         )
 
         train_encodings, train_label_ids = self._preprocess_data(
@@ -211,6 +227,9 @@ class BertIntentTrainer:
             metric_for_best_model="eval_loss",
             # 当前使用FP32训练，不启用FP16混合精度。
             fp16=False,
+            # 固定数据切分与训练随机性，方便对比不同训练集。
+            seed=42,
+            data_seed=42,
             # 不向Weights & Biases等外部平台上传训练日志。
             report_to=[],
         )

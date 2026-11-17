@@ -24,10 +24,13 @@ Thumbs.db
 logger/logs/*
 !logger/logs/.gitkeep
 training_artifacts/
+temporary_files/
+tmp_trainer/
 
 # Large third-party model artifacts
 /models/
 /rag_system_learning_version/models/
+/rag_system/models/
 *.pt
 *.pth
 *.bin
@@ -39,7 +42,10 @@ training_artifacts/
 # Local/private datasets and exports
 data/
 **/data_source/
-**/classify_data/
+/rag_system/data/
+/rag_system/classify_data/
+/rag_system/core/intent_classifier/classify_data/*.json
+/rag_system/core/intent_classifier/classify_data/*.jsonl
 *.csv
 *.pdf
 *.docx
@@ -50,4 +56,12 @@ data/
 # Internal delivery material
 简历交付包/
 *_简历交付包_*.zip
+
+# Raw evaluation inputs/outputs may contain course text and retrieved contexts.
+/rag_system/rag_assessment/system_test_cases.json
+/rag_system/rag_assessment/collected_system_results.json
+/rag_system/rag_assessment/ragas_runtime_data.json
+/rag_system/rag_assessment/retrained_ragas_evaluation_result.csv
+/rag_system/rag_assessment/candidate_m_experiment.json
+/rag_system/rag_assessment/intent_model_comparison.json
 

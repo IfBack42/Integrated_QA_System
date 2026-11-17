@@ -13,14 +13,14 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 RAG_SYSTEM_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DOCUMENT_DIRECTORY = PROJECT_ROOT / "sample_data"
+DEFAULT_DOCUMENT_DIRECTORY = RAG_SYSTEM_ROOT / "data" / "ai_data"
 
 from logger import get_logger
-from rag_system_learning_version.core.vector_retrieval.document_processor import (
+from rag_system.core.vector_retrieval.document_processor import (
     DocumentLoaderProcessor,
     DocumentSplitterProcessor,
 )
-from rag_system_learning_version.core.vector_retrieval.vector_service import (
+from rag_system.core.vector_retrieval.vector_service import (
     create_vector_service,
 )
 

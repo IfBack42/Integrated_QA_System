@@ -10,7 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[4]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from rag_system_learning_version.edu_document_loaders import DocumentLoaderManager
+from rag_system.core.vector_retrieval.document_processor.edu_document_loaders import DocumentLoaderManager
 from logger import get_logger
 
 

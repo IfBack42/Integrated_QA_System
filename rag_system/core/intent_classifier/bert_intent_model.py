@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 RAG_SYSTEM_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MODEL_PATH = RAG_SYSTEM_ROOT / "models" / "bert_query_classifier"
 
-LABEL_TO_ID = {"通用知识": 0, "专业咨询": 1}
+LABEL_TO_ID = {"通用知识": 0, "专业咨询": 1} # 用于批量转换模型标签
 ID_TO_LABEL = {label_id: label for label, label_id in LABEL_TO_ID.items()}
 
 
@@ -45,7 +45,7 @@ class BertIntentModel:
         self.tokenizer = BertTokenizer.from_pretrained(self.model_path)
         self.model = BertForSequenceClassification.from_pretrained(self.model_path)
         self.model.to(self.device)
-        self.model.eval()
+        self.model.eval() # 让Dropout等层进入推理状态
 
         logger.info(
             "已加载BERT意图分类模型: %s，使用设备: %s",
@@ -67,10 +67,10 @@ class BertIntentModel:
         )
         encoding = {name: value.to(self.device) for name, value in encoding.items()}
 
-        with torch.no_grad():
-            logits = self.model(**encoding).logits
-            probabilities = torch.softmax(logits, dim=1)
-            predicted_id = int(torch.argmax(probabilities, dim=1).item())
+        with torch.no_grad(): # 负责关闭梯度更新
+            logits = self.model(**encoding).logits # 模型原始分数
+            probabilities = torch.softmax(logits, dim=1) # 类别概率
+            predicted_id = int(torch.argmax(probabilities, dim=1).item()) # 最大概率下标
             confidence = float(probabilities[0, predicted_id].item())
 
         try:

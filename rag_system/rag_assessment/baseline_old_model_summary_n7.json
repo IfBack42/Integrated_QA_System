@@ -1,0 +1,52 @@
+{
+  "test_set": {
+    "total": 24,
+    "answerable": 20,
+    "unanswerable": 4,
+    "ragas_answerable_samples": 7
+  },
+  "system": {
+    "execution_success_count": 24,
+    "execution_success_rate": 1.0,
+    "answer_refusal_behavior_count": 24,
+    "answer_refusal_behavior_rate": 1.0,
+    "correct_refusal_count": 4,
+    "correct_refusal_rate": 1.0
+  },
+  "routing": {
+    "professional_route_count": 11,
+    "professional_route_rate_all": 0.4583333333333333,
+    "answerable_professional_route_count": 7,
+    "answerable_professional_route_rate": 0.35,
+    "misrouted_case_ids": [
+      "course_004",
+      "course_006",
+      "course_007",
+      "course_008",
+      "course_009",
+      "llm_001",
+      "llm_002",
+      "llm_003",
+      "llm_004",
+      "llm_006",
+      "llm_007",
+      "llm_008",
+      "robust_002"
+    ]
+  },
+  "latency_seconds": {
+    "mean": 5.152666666666667,
+    "median": 4.7653,
+    "p90": 7.844639999999999,
+    "p95": 9.011584999999998,
+    "min": 1.165,
+    "max": 15.1038
+  },
+  "ragas": {
+    "sample_count": 7,
+    "faithfulness": 0.9300595238095238,
+    "answer_relevancy": 0.8922064125759805,
+    "context_precision": 0.9999999999214285,
+    "context_recall": 1.0
+  }
+}

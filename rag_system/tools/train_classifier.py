@@ -10,17 +10,26 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from rag_system_learning_version.core.intent_classifier.classifier_trainer import (
+from rag_system.core.intent_classifier.classifier_trainer import (
     BertIntentTrainer,
 )
 
 RAG_SYSTEM_ROOT = Path(__file__).resolve().parents[2]
-TRAINING_DATA_FILE = PROJECT_ROOT / "sample_data" / "intent_training.example.jsonl"
+TRAINING_DATA_FILE = (
+    RAG_SYSTEM_ROOT
+    / "core"
+    / "intent_classifier"
+    / "classify_data"
+    / "model_enhanced.jsonl"
+)
+CANDIDATE_MODEL_PATH = (
+    RAG_SYSTEM_ROOT / "models" / "bert_query_classifier_candidate_v2"
+)
 
 
 def main():
-    """装配训练器并执行一次完整训练。"""
-    trainer = BertIntentTrainer()
+    """训练候选模型；验证通过前不覆盖当前正式模型。"""
+    trainer = BertIntentTrainer(output_model_path=CANDIDATE_MODEL_PATH)
     trainer.train(TRAINING_DATA_FILE)
 
 

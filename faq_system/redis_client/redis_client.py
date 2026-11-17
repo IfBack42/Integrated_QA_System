@@ -1,7 +1,9 @@
 # 该脚本用于: Redis缓存技术.
 
 # 导包
+import hashlib
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import redis
@@ -31,6 +33,7 @@ class RedisClient:
         self,
         settings=None,
         temporary_answer_key_prefix=None,
+        temporary_answer_ttl_seconds=None,
         faq_index_name=None,
         faq_document_key_prefix=None,
         faq_version_key=None,
@@ -40,6 +43,13 @@ class RedisClient:
             temporary_answer_key_prefix
             or self.settings.REDIS_TEMPORARY_ANSWER_KEY_PREFIX
         )
+        self.temporary_answer_ttl_seconds = (
+            temporary_answer_ttl_seconds
+            if temporary_answer_ttl_seconds is not None
+            else self.settings.REDIS_TEMPORARY_ANSWER_TTL_SECONDS
+        )
+        if self.temporary_answer_ttl_seconds <= 0:
+            raise ValueError("临时答案TTL必须大于0秒")
         self.faq_index_name = (
             faq_index_name or self.settings.REDIS_FAQ_INDEX_NAME
         )
@@ -67,9 +77,62 @@ class RedisClient:
             raise   # 声明抛出异常.
 
 
+    @staticmethod
+    def _normalize_temporary_query(query):
+        """统一首尾空格、连续空白和英文大小写，用于精确缓存。"""
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("临时答案查询必须是非空字符串")
+        return " ".join(query.strip().split()).casefold()
+
+
     def _temporary_answer_key(self, query):
-        """拼接RAG生成但尚未审核的临时答案Key。"""
-        return f"{self.temporary_answer_key_prefix}{query}"
+        """使用规范化query的SHA-256摘要生成长度固定的临时Key。"""
+        normalized_query = self._normalize_temporary_query(query)
+        query_digest = hashlib.sha256(
+            normalized_query.encode("utf-8")
+        ).hexdigest()
+        return f"{self.temporary_answer_key_prefix}{query_digest}"
+
+
+    def set_temporary_answer(self, query, answer, ttl_seconds=None):
+        """保存RAG临时问答并设置过期时间，不加入正式FAQ搜索索引。"""
+        if not isinstance(answer, str) or not answer.strip():
+            raise ValueError("临时答案必须是非空字符串")
+
+        effective_ttl = (
+            ttl_seconds
+            if ttl_seconds is not None
+            else self.temporary_answer_ttl_seconds
+        )
+        if not isinstance(effective_ttl, int) or effective_ttl <= 0:
+            raise ValueError("临时答案TTL必须是大于0的整数秒")
+
+        key = self._temporary_answer_key(query)
+        pipeline = self.client.pipeline(transaction=True)
+        pipeline.hset(
+            key,
+            mapping={
+                "query": query.strip(),
+                "answer": answer.strip(),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "source": "rag",
+            },
+        )
+        pipeline.expire(key, effective_ttl)
+        pipeline.execute()
+        logger.debug("Redis临时RAG答案写入成功，key=%s，ttl=%d", key, effective_ttl)
+        return key
+
+
+    def get_temporary_answer(self, query):
+        """按规范化query精确读取临时答案；不存在或已过期时返回None。"""
+        key = self._temporary_answer_key(query)
+        answer = self.client.hget(key, "answer")
+        if answer is None:
+            logger.debug("Redis临时RAG答案未命中，key=%s", key)
+            return None
+        logger.debug("Redis临时RAG答案命中，key=%s", key)
+        return answer
 
 
     def _faq_document_key(self, qa_id):
@@ -257,10 +320,13 @@ class RedisClient:
 
 
 def main():
-    """使用独立测试索引验证创建、写入和检索，结束后自动清理。"""
+    """独立验证正式FAQ检索和临时答案缓存，结束后自动清理。"""
     test_client = None
+    temporary_answer_key = None
     try:
         test_client = RedisClient(
+            temporary_answer_key_prefix="test:faq:interim:",
+            temporary_answer_ttl_seconds=60,
             faq_index_name="idx:test:faq:redis-client",
             faq_document_key_prefix="test:faq:redis-client:",
             faq_version_key="test:faq:meta:redis-client:version",
@@ -294,6 +360,15 @@ def main():
         matches = test_client.search_faq(["安装", "VMware", "Tools"])
         redis_info = test_client.get_redis_info("test:faq:*")
 
+        temporary_answer_key = test_client.set_temporary_answer(
+            query="Python 和 python 有什么区别",
+            answer="这是用于验证临时缓存的测试答案。",
+        )
+        temporary_answer = test_client.get_temporary_answer(
+            "  python 和 PYTHON 有什么区别  "
+        )
+        assert temporary_answer == "这是用于验证临时缓存的测试答案。"
+
         print(f"是否新建测试索引: {is_new_created}")
         print(f"首次是否执行同步: {is_synchronized}")
         print(f"相同版本再次同步是否跳过: {is_second_sync_skipped}")
@@ -304,21 +379,16 @@ def main():
         print("检索结果:")
         for match in matches:
             print(match)
+        print(f"临时缓存Key: {temporary_answer_key}")
+        print(f"临时缓存读取结果: {temporary_answer}")
     finally:
         if test_client is not None:
+            if temporary_answer_key is not None:
+                test_client.client.delete(temporary_answer_key)
             test_client._drop_faq_index(delete_documents=True)
             test_client.close()
 
 
 if __name__ == '__main__':
-    # main()
-
-    client = RedisClient(
-            faq_index_name="idx:faq:official",
-            faq_document_key_prefix="faq:official:",
-            faq_version_key="faq:meta:official:version",
-        )
-    redis_info = client.get_redis_info("faq:official:*")
-    print(f"测试Redis Key: {redis_info['keys']}",end="\n"*5)
-    print(f"Search索引: {redis_info['search_indexes']}")
+    main()
 

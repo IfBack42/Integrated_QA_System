@@ -12,7 +12,7 @@ from langchain_core.documents import Document
 
 from config import config
 from logger import get_logger
-from rag_system_learning_version.edu_text_spliter import TextSplitterManager
+from rag_system.core.vector_retrieval.document_processor.edu_text_spliter import TextSplitterManager
 
 
 logger = get_logger(__name__)
@@ -159,7 +159,7 @@ class DocumentSplitterProcessor:
 
 if __name__ == "__main__":
     # 先加载一份轻量Markdown文档，再单独验证父子切分与ID传递。
-    from rag_system_learning_version.core.vector_retrieval.document_processor.document_loader import (
+    from rag_system.core.vector_retrieval.document_processor.document_loader import (
         DocumentLoaderProcessor,
     )
 

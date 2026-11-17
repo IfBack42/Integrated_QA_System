@@ -41,10 +41,10 @@ class Config:
         # 项目固定目录：由代码根据项目根目录计算，不需要写入 INI。
         self.PROJECT_ROOT = str(PROJECT_ROOT)
         self.LOG_DIR = str(PROJECT_ROOT / "logger" / "logs")
-        self.DATA_DIR = str(PROJECT_ROOT / "sample_data")
-        self.MODELS_DIR = str(PROJECT_ROOT / "rag_system_learning_version" / "models")
+        self.DATA_DIR = str(PROJECT_ROOT / "rag_system" / "data")
+        self.MODELS_DIR = str(PROJECT_ROOT / "rag_system" / "models")
         self.EDU_DOCUMENT_LOADERS_DIR = str(
-            PROJECT_ROOT / "rag_system_learning_version" / "edu_document_loaders"
+            PROJECT_ROOT / "rag_system" / "edu_document_loaders"
         )
 
         # MySQL：连接参数来自 INI，密码只来自环境变量。
@@ -69,6 +69,12 @@ class Config:
             "redis",
             "temporary_answer_key_prefix",
             fallback="faq:interim:",
+        )
+        # 临时RAG答案的存活时间；这类内容不属于正式FAQ，可自动过期。
+        self.REDIS_TEMPORARY_ANSWER_TTL_SECONDS = self.config.getint(
+            "redis",
+            "temporary_answer_ttl_seconds",
+            fallback=86400,
         )
         # Redis Search正式FAQ搜索索引名称。
         self.REDIS_FAQ_INDEX_NAME = self.config.get(
@@ -101,11 +107,11 @@ class Config:
 
         # LLM：模型参数来自 INI，API Key 只来自环境变量。
         self.LLM_MODEL = self.config.get("llm", "model", fallback="qwen-plus")
-        self.DASHSCOPE_API_KEY = _require_env("DASHSCOPE_API_KEY")
-        self.DASHSCOPE_BASE_URL = self.config.get(
+        self.LLM_API_KEY = _require_env("LLM_API_KEY")
+        self.BASE_URL = self.config.get(
             "llm",
-            "dashscope_base_url",
-            fallback="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "base_url",
+            fallback="https://api.deepseek.com",
         )
 
         # 检索参数。
@@ -148,7 +154,7 @@ class Config:
         )
         self.VALID_SOURCES = json.loads(valid_sources)
         self.CUSTOMER_SERVICE_PHONE = self.config.get(
-            "app", "customer_service_phone", fallback=""
+            "app", "customer_service_phone", fallback="13112345678"
         )
 
 

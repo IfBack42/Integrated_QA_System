@@ -20,11 +20,11 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from config import config
 from logger import get_logger
-from rag_system_learning_version.core.vector_retrieval.db.milvus_client import MilvusStorage
-from rag_system_learning_version.core.vector_retrieval.models.embedding_model import (
+from rag_system.core.vector_retrieval.db.milvus_client import MilvusStorage
+from rag_system.core.vector_retrieval.models.embedding_model import (
     EmbeddingModel,
 )
-from rag_system_learning_version.core.vector_retrieval.models.reranker_model import (
+from rag_system.core.vector_retrieval.models.reranker_model import (
     RerankerModel,
 )
 
@@ -108,13 +108,15 @@ class VectorService:
         query,
         k=None,
         file_path_filter=None,
+        final_limit=None,
     ):
         """
         该函数用于执行: 混合检索(稠密 + 稀疏向量) + 结果重排序, 返回精准父文档
         :param query: 用户查询文本, 例如: 'AI学科的课程内容是什么'
         :param k: 混合检索返回的TopK子块数量
         :param file_path_filter: 文件路径过滤条件, 默认None不过滤.
-        :return: 重排序后的Top-M个父文档列表(M是从conf中获取的)
+        :param final_limit: 最终保留的父文档数量；默认读取配置中的Top-M。
+        :return: 重排序后的父文档列表。
         """
         if not isinstance(query, str) or not query.strip():
             raise ValueError("query必须是非空字符串")
@@ -149,32 +151,56 @@ class VectorService:
         # 5. 从子块中提取去重的父文档 -> 避免同一父块的多个子块重复返回.
         parent_docs = self._restore_unique_parent_documents(sub_chunks)
 
-        # 6. 父文档少于2个时没有重排价值，直接返回。
-        if len(parent_docs) < 2:
-            return parent_docs[:config.CANDIDATE_M]
+        # 6. 统一交给公开重排接口，便于子查询等策略合并多轮结果后再次排序。
+        return self.rerank_documents(
+            query=query.strip(),
+            documents=parent_docs,
+            limit=final_limit,
+        )
 
-        # 7. RerankerModel负责构造CrossEncoder文本对并返回对应分数。
+    def rerank_documents(self, query, documents, limit=None):
+        """按照原始问题对父文档重新排序并截取最终结果。"""
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query必须是非空字符串")
+
+        documents = list(documents)
+        effective_limit = config.CANDIDATE_M if limit is None else limit
+        if (
+            not isinstance(effective_limit, int)
+            or isinstance(effective_limit, bool)
+            or effective_limit <= 0
+        ):
+            raise ValueError("limit必须是正整数")
+
+        if len(documents) < 2:
+            return documents[:effective_limit]
+
+        # RerankerModel负责构造CrossEncoder文本对并返回对应分数。
         if self.reranker_model is None:
             raise RuntimeError(
                 "当前VectorService未加载RerankerModel，不能执行候选重排序"
             )
         scores = self.reranker_model.score(
             query=query.strip(),
-            documents=[doc.page_content for doc in parent_docs],
+            documents=[doc.page_content for doc in documents],
         )
-        if len(scores) != len(parent_docs):
+        if len(scores) != len(documents):
             raise RuntimeError("Reranker分数数量与父文档数量不一致")
 
-        # 8. 业务层负责按相关性分数排序，并返回最终Top-M父文档。
+        # 业务层负责按相关性分数排序，并返回最终父文档。
         ranked_parent_docs = [
             doc
             for _, doc in sorted(
-                zip(scores, parent_docs),
+                zip(scores, documents),
                 key=lambda score_and_doc: score_and_doc[0],
                 reverse=True,
             )
         ]
-        return ranked_parent_docs[:config.CANDIDATE_M]
+        return ranked_parent_docs[:effective_limit]
+
+    def close(self):
+        """释放当前向量服务持有的Milvus连接。"""
+        self.milvus_storage.close()
 
 
 
@@ -237,17 +263,19 @@ class VectorService:
         )
 
 
-def create_vector_service(load_reranker=True):
-    """创建向量业务服务；纯入库场景可跳过Reranker模型。"""
+def create_vector_service(load_reranker=True, device=None):
+    """创建向量服务；device允许离线评估显式使用CPU。"""
 
     milvus_storage = None
     try:
-        embedding_model = EmbeddingModel()
+        embedding_model = EmbeddingModel(device=device)
 
         milvus_storage = MilvusStorage(
             dense_dim=embedding_model.dense_dim,
         )
-        reranker_model = RerankerModel() if load_reranker else None
+        reranker_model = (
+            RerankerModel(device=device) if load_reranker else None
+        )
     except Exception:
         # 防止Milvus已经连接、Reranker初始化却失败时遗留连接。
         if milvus_storage is not None:

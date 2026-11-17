@@ -5,12 +5,12 @@ import time
 from pathlib import Path
 
 
-project_root = Path(__file__).resolve().parent
+project_root = Path(__file__).resolve().parents[1]
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 from logger import get_logger
-from faq_system.domain import FAQStatus
+from domain import QAStatus
 from qa_system import QASystem
 
 
@@ -18,15 +18,15 @@ logger = get_logger(__name__)
 
 
 def _print_result(result):
-    if result.is_hit:
-        print(f"答案: {result.answer}")
+    if result.is_answered:
+        print(f"答案:\n {result.answer}")
         return
 
-    if result.status == FAQStatus.INVALID:
+    if result.status == QAStatus.INVALID:
         print(f"输入无效: {result.message}")
         return
 
-    print("FAQ中未找到可靠答案，后续需要进入RAG系统")
+    print(result.message or "系统未能生成答案")
 
 
 def main():
@@ -34,13 +34,13 @@ def main():
     try:
         qa_system = QASystem()
         time.sleep(0.1)
-        print("\n欢迎使用FAQ问答系统:")
+        print("\n欢迎使用智能问答系统:")
         print("输入查询进行回答，输入 q 退出")
 
         while True:
             query = input("\n请输入查询: ").strip()
             if query.lower() == "q":
-                logger.info("退出FAQ系统")
+                logger.info("退出问答系统")
                 print("再见")
                 break
 
@@ -51,11 +51,11 @@ def main():
                 time.sleep(0.1)
                 _print_result(result)
             except Exception:
-                logger.exception("FAQ查询发生系统异常")
+                logger.exception("问答查询发生系统异常")
                 print("系统暂时无法完成查询，请查看日志")
     except Exception:
-        logger.exception("FAQ系统启动失败")
-        print("FAQ系统启动失败，请查看日志")
+        logger.exception("问答系统启动失败")
+        print("问答系统启动失败，请查看日志")
     finally:
         if qa_system is not None:
             qa_system.close()
