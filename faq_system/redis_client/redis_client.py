@@ -32,11 +32,11 @@ class RedisClient:
     def __init__(
         self,
         settings=None,
-        temporary_answer_key_prefix=None,
-        temporary_answer_ttl_seconds=None,
-        faq_index_name=None,
-        faq_document_key_prefix=None,
-        faq_version_key=None,
+        temporary_answer_key_prefix=None, # RAG生成但尚未审核的临时答案Key前缀
+        temporary_answer_ttl_seconds=None, # 临时RAG答案的存活时间（秒）
+        faq_index_name=None, # Redis Search正式FAQ搜索索引的名称。
+        faq_document_key_prefix=None, # 正式FAQ Hash文档的Key前缀
+        faq_version_key=None, # Redis保存的权威FAQ内容版本
     ):
         self.settings = settings or config
         self.temporary_answer_key_prefix = (
@@ -86,7 +86,7 @@ class RedisClient:
 
 
     def _temporary_answer_key(self, query):
-        """使用规范化query的SHA-256摘要生成长度固定的临时Key。"""
+        """将每个临时问题规范化后，计算其 SHA-256 哈希值，再加上指定前缀，作为 Redis 缓存的 Key。"""
         normalized_query = self._normalize_temporary_query(query)
         query_digest = hashlib.sha256(
             normalized_query.encode("utf-8")
@@ -118,7 +118,7 @@ class RedisClient:
                 "source": "rag",
             },
         )
-        pipeline.expire(key, effective_ttl)
+        pipeline.expire(key, effective_ttl) # expire() 是 Redis 专门用于设置 Key 过期时间（TTL）的命令
         pipeline.execute()
         logger.debug("Redis临时RAG答案写入成功，key=%s，ttl=%d", key, effective_ttl)
         return key
@@ -241,6 +241,7 @@ class RedisClient:
         if not escaped_terms:
             raise ValueError("FAQ查询词不能为空")
 
+        # 上层使用jieba分词，将原始问题分词后，使用OR召回
         # “|”是Redis Search查询语法中的OR：任意词命中即可进入候选集，
         # 再由BM25根据各个词的贡献计算总分并完成排序。
         query_expression = "|".join(escaped_terms)
@@ -249,7 +250,7 @@ class RedisClient:
             escaped_terms,
             limit,
         )
-        query = (
+        query = ( # 流式接口，基本无顺序要求
             # 只在Schema定义的question全文字段中搜索用户文本。
             Query(f"@question:({query_expression})")
             # 使用中文查询分析规则处理本次输入。

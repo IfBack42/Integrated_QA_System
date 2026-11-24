@@ -13,12 +13,13 @@ import statistics
 from pathlib import Path
 
 
-ASSESSMENT_DIR = Path(__file__).resolve().parent
-SYSTEM_RESULTS_FILE = ASSESSMENT_DIR / "collected_system_results.json"
-RAGAS_RESULTS_FILE = ASSESSMENT_DIR / "retrained_ragas_evaluation_result.csv"
-BASELINE_SUMMARY_FILE = ASSESSMENT_DIR / "baseline_old_model_summary_n7.json"
-SUMMARY_FILE = ASSESSMENT_DIR / "final_evaluation_summary.json"
-REPORT_FILE = ASSESSMENT_DIR / "final_evaluation_report.md"
+ASSESSMENT_DIR = Path(__file__).resolve().parents[1]
+RESULTS_DIR = ASSESSMENT_DIR / "results"
+SYSTEM_RESULTS_FILE = RESULTS_DIR / "collected_system_results.json"
+RAGAS_RESULTS_FILE = RESULTS_DIR / "retrained_ragas_evaluation_result.csv"
+BASELINE_SUMMARY_FILE = RESULTS_DIR / "baseline_old_model_summary_n7.json"
+SUMMARY_FILE = RESULTS_DIR / "final_evaluation_summary.json"
+REPORT_FILE = RESULTS_DIR / "final_evaluation_report.md"
 
 RAGAS_METRICS = (
     "faithfulness",
@@ -348,6 +349,7 @@ def render_report(summary, baseline=None):
 
 
 def main():
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     records = json.loads(SYSTEM_RESULTS_FILE.read_text(encoding="utf-8"))
     with RAGAS_RESULTS_FILE.open(encoding="utf-8-sig", newline="") as file:
         ragas_rows = list(csv.DictReader(file))

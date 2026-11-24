@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -32,9 +32,11 @@ from rag_system.core.vector_retrieval.models.embedding_model import EmbeddingMod
 
 logger = get_logger(__name__)
 
-ASSESSMENT_DIR = Path(__file__).resolve().parent
-DEFAULT_DATA_FILE = ASSESSMENT_DIR / "ragas_runtime_data.json"
-DEFAULT_RESULT_FILE = ASSESSMENT_DIR / "retrained_ragas_evaluation_result.csv"
+ASSESSMENT_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = ASSESSMENT_DIR / "data"
+RESULTS_DIR = ASSESSMENT_DIR / "results"
+DEFAULT_DATA_FILE = DATA_DIR / "ragas_runtime_data.json"
+DEFAULT_RESULT_FILE = RESULTS_DIR / "retrained_ragas_evaluation_result.csv"
 
 
 class BGEEmbeddingAdapter(Embeddings):

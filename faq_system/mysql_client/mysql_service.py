@@ -31,7 +31,7 @@ class MySQLClient:
             raise ValueError(
                 "MySQL FAQ表名只能包含英文字母、数字和下划线，且不能以数字开头"
             )
-        # MySQL参数占位符不能代替表名，因此先白名单校验，再安全拼接标识符。
+        # MySQL参数占位符不能代替表名，因此先白名单校验（白名单字典），再安全拼接标识符（字符拼接）。
         self._faq_table_sql = f"`{self.faq_table_name}`"
         try:
             # 建立MySQL数据库连接 -> 从config中读取编码.

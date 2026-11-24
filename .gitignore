@@ -58,10 +58,15 @@ data/
 *_简历交付包_*.zip
 
 # Raw evaluation inputs/outputs may contain course text and retrieved contexts.
-/rag_system/rag_assessment/system_test_cases.json
-/rag_system/rag_assessment/collected_system_results.json
-/rag_system/rag_assessment/ragas_runtime_data.json
-/rag_system/rag_assessment/retrained_ragas_evaluation_result.csv
-/rag_system/rag_assessment/candidate_m_experiment.json
-/rag_system/rag_assessment/intent_model_comparison.json
+/rag_system/rag_assessment/data/system_test_cases.json
+/rag_system/rag_assessment/data/ragas_runtime_data.json
+/rag_system/rag_assessment/results/collected_system_results.json
+/rag_system/rag_assessment/results/retrained_ragas_evaluation_result.csv
+/rag_system/rag_assessment/results/candidate_m_experiment.json
+/rag_system/rag_assessment/results/intent_model_comparison.json
+
+# Keep the assessment data directory and its description, but not private inputs.
+!/rag_system/rag_assessment/data/
+/rag_system/rag_assessment/data/*
+!/rag_system/rag_assessment/data/README.md
 

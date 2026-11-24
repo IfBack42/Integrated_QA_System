@@ -80,8 +80,8 @@ BERT 意图分类在独立保留集上的知识库问题召回率由 10% 提升�
 
 详细口径和低分样本分析见：
 
-- [`rag_system/rag_assessment/final_evaluation_report.md`](rag_system/rag_assessment/final_evaluation_report.md)
-- [`rag_system/rag_assessment/intent_retraining_report.md`](rag_system/rag_assessment/intent_retraining_report.md)
+- [`rag_system/rag_assessment/results/final_evaluation_report.md`](rag_system/rag_assessment/results/final_evaluation_report.md)
+- [`rag_system/rag_assessment/results/intent_retraining_report.md`](rag_system/rag_assessment/results/intent_retraining_report.md)
 
 这些结果是当前本地小样本基线，不能直接外推为线上大规模效果。
 
@@ -107,7 +107,10 @@ Integrated_QA_System/
 │   │   ├── retrieval_service.py    # 策略选择与检索编排
 │   │   └── rag_service.py          # RAG 总流程
 │   ├── tools/                      # 入库、训练、查询与模型评估入口
-│   └── rag_assessment/             # 评测代码与可公开汇总报告
+│   └── rag_assessment/
+│       ├── scripts/                # 结果采集、RAGAS评分与报告生成
+│       ├── data/                   # 黄金测试集与RAGAS运行输入
+│       └── results/                # 逐条结果、指标汇总与分析报告
 ├── docs/engineering-decisions.md   # 主要工程取舍
 └── sample_data/                    # 不含隐私的最小示例数据
 ```
@@ -194,9 +197,14 @@ python rag_system/main.py
 ## 评测复现入口
 
 ```text
-collect_system_results.py   通过真实系统采集问题、答案、上下文和耗时
-rag_as.py                   对采集结果执行 RAGAS 评估
-generate_final_report.py    汇总路由、延迟、拒答和 RAGAS 指标
+rag_system/rag_assessment/scripts/collect_system_results.py
+→ 通过真实系统采集问题、答案、上下文和耗时
+
+rag_system/rag_assessment/scripts/rag_as.py
+→ 对采集结果执行 RAGAS 评估
+
+rag_system/rag_assessment/scripts/generate_final_report.py
+→ 汇总路由、延迟、拒答和 RAGAS 指标
 ```
 
 原始测试问题、课程上下文及逐条输出可能包含课程资料，因此未随公开仓库上传；仓库保留评测代码、汇总 JSON 和 Markdown 报告。
@@ -210,7 +218,10 @@ generate_final_report.py    汇总路由、延迟、拒答和 RAGAS 指标
 - 正常未命中返回业务结果；连接故障、索引损坏和返回结构异常直接抛出，避免上层把系统故障误判为“没有答案”。
 - 下层组件处理各自第三方 API 格式，上层 Service 只保留清楚的数据流与业务判断。
 
-更多说明见 [`docs/engineering-decisions.md`](docs/engineering-decisions.md)。
+更多说明见：
+
+- [`docs/engineering-decisions.md`](docs/engineering-decisions.md)：当前代码已经体现的工程取舍。
+- [`docs/项目收尾与后续备忘.md`](docs/项目收尾与后续备忘.md)：封版状态、未实现边界和未来备忘。
 
 ## 当前限制
 

@@ -12,7 +12,7 @@ from pathlib import Path
 from time import perf_counter
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -22,10 +22,12 @@ from rag_system.core.rag_service import RAGService, create_rag_service
 
 logger = get_logger(__name__)
 
-ASSESSMENT_DIR = Path(__file__).resolve().parent
-DEFAULT_CASES_FILE = ASSESSMENT_DIR / "system_test_cases.json"
-DEFAULT_RESULTS_FILE = ASSESSMENT_DIR / "collected_system_results.json"
-DEFAULT_RAGAS_FILE = ASSESSMENT_DIR / "ragas_runtime_data.json"
+ASSESSMENT_DIR = Path(__file__).resolve().parents[1]
+DATA_DIR = ASSESSMENT_DIR / "data"
+RESULTS_DIR = ASSESSMENT_DIR / "results"
+DEFAULT_CASES_FILE = DATA_DIR / "system_test_cases.json"
+DEFAULT_RESULTS_FILE = RESULTS_DIR / "collected_system_results.json"
+DEFAULT_RAGAS_FILE = DATA_DIR / "ragas_runtime_data.json"
 
 
 class SystemResultCollector:
@@ -120,6 +122,9 @@ class SystemResultCollector:
         """保存完整记录，并生成仅包含成功专业检索结果的RAGAS输入。"""
         results_path = Path(results_file) if results_file else DEFAULT_RESULTS_FILE
         ragas_path = Path(ragas_file) if ragas_file else DEFAULT_RAGAS_FILE
+
+        results_path.parent.mkdir(parents=True, exist_ok=True)
+        ragas_path.parent.mkdir(parents=True, exist_ok=True)
 
         with results_path.open("w", encoding="utf-8") as file:
             json.dump(records, file, ensure_ascii=False, indent=2)

@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -15,13 +15,17 @@ import torch
 from rag_system.core.intent_classifier.bert_intent_model import BertIntentModel
 
 
-RAG_SYSTEM_ROOT = Path(__file__).resolve().parents[2]
+RAG_SYSTEM_ROOT = Path(__file__).resolve().parents[1]
 FORMAL_MODEL_PATH = RAG_SYSTEM_ROOT / "models" / "bert_query_classifier"
 CANDIDATE_MODEL_PATH = (
     RAG_SYSTEM_ROOT / "models" / "bert_query_classifier_candidate_v2"
 )
-GOLD_CASES_FILE = RAG_SYSTEM_ROOT / "rag_assessment" / "system_test_cases.json"
-OUTPUT_FILE = RAG_SYSTEM_ROOT / "rag_assessment" / "intent_model_comparison.json"
+GOLD_CASES_FILE = (
+    RAG_SYSTEM_ROOT / "rag_assessment" / "data" / "system_test_cases.json"
+)
+OUTPUT_FILE = (
+    RAG_SYSTEM_ROOT / "rag_assessment" / "results" / "intent_model_comparison.json"
+)
 
 GENERAL_REGRESSION_QUERIES = [
     "北京明天的天气怎么样？",

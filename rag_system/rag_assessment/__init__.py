@@ -1,7 +1,7 @@
-"""RAG评估工具。"""
+"""RAG评估工具的公开入口。"""
 
-from .collect_system_results import SystemResultCollector
-from .rag_as import BGEEmbeddingAdapter, RagasEvaluator
+from .scripts.collect_system_results import SystemResultCollector
+from .scripts.rag_as import BGEEmbeddingAdapter, RagasEvaluator
 
 __all__ = [
     "BGEEmbeddingAdapter",
